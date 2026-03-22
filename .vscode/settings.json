@@ -151,9 +151,11 @@
   // ── Spell checker ────────────────────────────────────────────
   "cSpell.words": [
     "biomejs",
+    "carsensor",
     "commitlint",
     "devcontainer",
     "dockerfile",
+    "Haidar",
     "hookform",
     "husky",
     "pnpm",

@@ -1,9 +1,11 @@
 # ── Dependencies ─────────────────────────────────────────────
 node_modules/
 .pnpm-store/
+.yarn/
 
 # ── Build output ─────────────────────────────────────────────
 dist/
+dist-ssr/
 build/
 out/
 
@@ -22,27 +24,34 @@ blob-report/
 .cache/
 .vite/
 .turbo/
+*.tsbuildinfo
+
+# ── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # ── Editor — VS Code ─────────────────────────────────────────
-# These three files ARE committed — project config for everyone:
-#   .vscode/extensions.json
-#   .vscode/settings.json
-#   .vscode/launch.json
-# Everything else is personal/local and ignored:
+# Committed: .vscode/extensions.json, settings.json, launch.json
+# Ignored: personal/local files
 .vscode/*.code-snippets
 .vscode/tasks.json
 
 # ── Editor — other ───────────────────────────────────────────
 .idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 *.swp
-*.swo
+
+# ── OS ───────────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
 Thumbs.db
-
-# ── Logs ─────────────────────────────────────────────────────
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
-# ── TypeScript ───────────────────────────────────────────────
-*.tsbuildinfo
+ehthumbs.db
+Desktop.ini

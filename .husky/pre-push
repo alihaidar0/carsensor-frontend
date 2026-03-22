@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 while read LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
   BRANCH=$(echo "$REMOTE_REF" | sed 's|refs/heads/||')
   if [ "$BRANCH" = "main" ]; then
