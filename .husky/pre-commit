@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' || true)
+
+if [ -n "$STAGED_TS" ]; then
+  echo "  → Biome lint + format..."
+  npx biome check --write $STAGED_TS && git add $STAGED_TS || {
+    echo "❌ Biome check failed. Run: pnpm check"
+    exit 1
+  }
+
+  echo "  → TypeScript check..."
+  npx tsc --noEmit --skipLibCheck 2>/dev/null || {
+    echo "❌ TypeScript errors found. Run: pnpm typecheck"
+    exit 1
+  }
+
+  echo "  → checking for console.log / debugger..."
+  if echo "$STAGED_TS" | xargs grep -En 'debugger|console\.log\(' 2>/dev/null; then
+    echo "⚠️  console.log or debugger found — remove before committing."
+    exit 1
+  fi
+fi
+
+echo "  → checking for .env files..."
+STAGED_ENV=$(git diff --cached --name-only | grep -E '^\.env' | grep -v '\.example$' || true)
+if [ -n "$STAGED_ENV" ]; then
+  echo "❌ Attempting to commit secret file: $STAGED_ENV"
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed"

@@ -1,0 +1,326 @@
+# ============================================================
+#  .github/workflows/ci.yml
+#
+#  Runs on every push and PR.
+#
+#  Branch strategy:
+#    feature/* fix/* chore/* refactor/* → CI only
+#    develop                            → CI only
+#    main (via PR merge only)           → CI → publish prod image
+#
+#  ── IMPORTANT — Branch Protection ────────────────────────────
+#  Direct push to main is blocked via GitHub Branch Protection Rules.
+#  Set this up in: Settings → Branches → Add ruleset → target: main
+#  Rules: Require PR, Require status checks, Block force pushes.
+#  The Husky pre-push hook enforces this locally as a second layer.
+#
+#  ── IMPORTANT — React Project Required ───────────────────────
+#  CI jobs (typecheck, lint, test, build, e2e) only run when a
+#  React project has been scaffolded (pnpm-lock.yaml exists).
+#  Before scaffolding, these jobs are skipped automatically.
+#
+#  Required GitHub Secrets (for publish job):
+#    DOCKERHUB_USERNAME   Your Docker Hub username
+#    DOCKERHUB_TOKEN      Docker Hub access token (Read & Write)
+# ============================================================
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "fix/**"
+      - "chore/**"
+      - "refactor/**"
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+      - "docs/**"
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "9.15.4"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+
+  # ── Project Check ─────────────────────────────────────────────
+  # Detects whether a React project has been scaffolded yet.
+  # All CI jobs depend on this — they skip if no project exists.
+  # This allows the template to live in GitHub without failing CI
+  # before the developer scaffolds the React app inside the container.
+  check-project:
+    name: Check Project Exists
+    runs-on: ubuntu-latest
+    outputs:
+      has-project: ${{ steps.check.outputs.has-project }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check for pnpm-lock.yaml
+        id: check
+        run: |
+          if [ -f "pnpm-lock.yaml" ]; then
+            echo "has-project=true" >> $GITHUB_OUTPUT
+            echo "✅ React project found — running CI"
+          else
+            echo "has-project=false" >> $GITHUB_OUTPUT
+            echo "⏭️  No React project yet — skipping CI jobs"
+            echo "   Scaffold first: pnpm create vite@latest . --template react-ts"
+          fi
+
+  # ── Type Check ───────────────────────────────────────────────
+  typecheck:
+    name: Type Check (tsc)
+    runs-on: ubuntu-latest
+    needs: check-project
+    if: |
+      needs.check-project.outputs.has-project == 'true' &&
+      (github.event.pull_request.draft == false || github.event_name != 'pull_request')
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  # ── Lint & Format ────────────────────────────────────────────
+  lint:
+    name: Lint & Format (Biome)
+    runs-on: ubuntu-latest
+    needs: typecheck
+    if: needs.typecheck.result == 'success'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+
+  # ── Unit Tests ───────────────────────────────────────────────
+  test:
+    name: Unit Tests (Vitest)
+    runs-on: ubuntu-latest
+    needs: typecheck
+    if: needs.typecheck.result == 'success'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:coverage
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ── Production Build ─────────────────────────────────────────
+  build:
+    name: Build (Vite)
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    if: needs.lint.result == 'success' && needs.test.result == 'success'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  # ── E2E Tests ─────────────────────────────────────────────────
+  e2e:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: build
+    if: needs.build.result == 'success'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run E2E tests
+        run: pnpm test:e2e
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ── Security ─────────────────────────────────────────────────
+  security:
+    name: Security (pnpm audit)
+    runs-on: ubuntu-latest
+    needs: check-project
+    if: needs.check-project.outputs.has-project == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level=high || true
+      # ⚠️ aquasecurity/trivy-action removed — compromised 2026-03-19
+
+  # ── CI Gate ──────────────────────────────────────────────────
+  # Passes when:
+  #   - No React project yet → all jobs skipped → gate passes (template mode)
+  #   - React project exists → all jobs must succeed → gate passes
+  ci-passed:
+    name: CI Passed ✅
+    runs-on: ubuntu-latest
+    needs: [check-project, typecheck, lint, test, build, e2e, security]
+    if: always()
+    steps:
+      - name: Evaluate results
+        run: |
+          HAS_PROJECT="${{ needs.check-project.outputs.has-project }}"
+
+          # No project yet — template mode, all CI jobs were skipped
+          if [[ "$HAS_PROJECT" != "true" ]]; then
+            echo "⏭️  No React project scaffolded yet — CI skipped"
+            echo "   This is expected for the template repo."
+            echo "   Scaffold a project then push again to run full CI."
+            exit 0
+          fi
+
+          # Project exists — all jobs must have passed
+          if [[ "${{ needs.typecheck.result }}" != "success" ]]; then echo "❌ Typecheck failed" && exit 1; fi
+          if [[ "${{ needs.lint.result }}"      != "success" ]]; then echo "❌ Lint failed"      && exit 1; fi
+          if [[ "${{ needs.test.result }}"      != "success" ]]; then echo "❌ Tests failed"     && exit 1; fi
+          if [[ "${{ needs.build.result }}"     != "success" ]]; then echo "❌ Build failed"     && exit 1; fi
+          if [[ "${{ needs.e2e.result }}"       != "success" ]]; then echo "❌ E2E failed"       && exit 1; fi
+          echo "✅ All CI gates passed"
+
+  # ── Publish Production Image ─────────────────────────────────
+  # Runs ONLY when:
+  #   1. Branch is main
+  #   2. Event is push (not a PR)
+  #   3. CI gate passed
+  #   4. React project exists (pnpm-lock.yaml present)
+  #
+  # Image name auto-derived from GitHub repo name:
+  #   github.com/alihaidar0/my-app → DOCKERHUB_USERNAME/my-app:latest
+  publish:
+    name: Publish Production Image 🚀
+    runs-on: ubuntu-latest
+    needs: ci-passed
+    if: |
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      needs.ci-passed.result == 'success'
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check project exists before publishing
+        run: |
+          if [ ! -f "pnpm-lock.yaml" ]; then
+            echo "⏭️  No React project yet — skipping production image publish"
+            exit 0
+          fi
+          echo "✅ React project found — publishing production image"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push production image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.prod
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Write publish summary
+        if: always()
+        run: |
+          echo "## 🚀 Production Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | \`${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Digest** | \`${{ steps.build.outputs.digest }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tags** | \`latest + sha-${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Platforms** | \`linux/amd64, linux/arm64\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY

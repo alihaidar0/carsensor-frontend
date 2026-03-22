@@ -1,0 +1,167 @@
+{
+  // ============================================================
+  //  .vscode/settings.json
+  //
+  //  Project-level settings — committed to git so every developer
+  //  gets the same editor experience regardless of their personal
+  //  global VS Code settings.
+  //
+  //  These apply on BOTH Windows and inside the container.
+  //
+  //  NOTE: Container-specific settings (typescript.tsdk, etc.)
+  //  live in .devcontainer/devcontainer.json — not here.
+  // ============================================================
+
+  // ── Editor ───────────────────────────────────────────────────
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.rulers": [80, 120],
+  "editor.renderWhitespace": "boundary",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false,
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
+  "editor.suggest.preview": true,
+  "editor.inlineSuggest.enabled": true,
+
+  // ── Files ────────────────────────────────────────────────────
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.eol": "\n",
+  "files.associations": {
+    "**/*.css": "tailwindcss",
+    "**/*.env*": "dotenv",
+    "Dockerfile*": "dockerfile",
+    "*.sh": "shellscript"
+  },
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.git": false,
+    "**/dist": true,
+    "**/coverage": true,
+    "**/.cache": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/coverage/**": true
+  },
+
+  // ── Search ───────────────────────────────────────────────────
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/coverage": true,
+    "**/.cache": true,
+    "**/pnpm-lock.yaml": true
+  },
+
+  // ── Terminal ─────────────────────────────────────────────────
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.scrollback": 5000,
+
+  // ── TypeScript ───────────────────────────────────────────────
+  "typescript.preferences.importModuleSpecifier": "shortest",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  // ── Formatter per language ────────────────────────────────────
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "vscode.markdown-language-features",
+    "editor.formatOnSave": false,
+    "files.trimTrailingWhitespace": false
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+
+  // ── Tailwind CSS ─────────────────────────────────────────────
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+
+  // ── Explorer sidebar ──────────────────────────────────────────
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.js, ${capture}.d.ts, ${capture}.test.ts, ${capture}.spec.ts",
+    "*.tsx": "${capture}.test.tsx, ${capture}.spec.tsx, ${capture}.stories.tsx",
+    "package.json": "package-lock.json, pnpm-lock.yaml, .npmrc, bun.lockb, .nvmrc, .node-version",
+    "vite.config.*": "vitest.config.*, tsconfig.*.json",
+    "tsconfig.json": "tsconfig.*.json",
+    ".env": ".env.*, .envrc",
+    "biome.json": ".eslintrc*, .prettierrc*, .editorconfig",
+    "tailwind.config.*": "postcss.config.*",
+    "README.md": "CHANGELOG.md, CONTRIBUTING.md, LICENSE"
+  },
+
+  // ── Git ──────────────────────────────────────────────────────
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "gitlens.hovers.currentLine.over": "line",
+
+  // ── Vitest ───────────────────────────────────────────────────
+  "vitest.enable": true,
+  "vitest.include": ["src/**/*.{test,spec}.{ts,tsx}"],
+
+  // ── Error Lens ───────────────────────────────────────────────
+  "errorLens.enabledDiagnosticLevels": ["error", "warning"],
+  "errorLens.followCursor": "allLines",
+
+  // ── Spell checker ────────────────────────────────────────────
+  "cSpell.words": [
+    "biomejs",
+    "commitlint",
+    "devcontainer",
+    "dockerfile",
+    "hookform",
+    "husky",
+    "pnpm",
+    "shadcn",
+    "tanstack",
+    "tsconfig",
+    "vite",
+    "vitest",
+    "zustand"
+  ]
+}

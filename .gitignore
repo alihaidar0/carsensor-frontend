@@ -1,0 +1,48 @@
+# ── Dependencies ─────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Build output ─────────────────────────────────────────────
+dist/
+build/
+out/
+
+# ── Environment & secrets ─────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Testing ──────────────────────────────────────────────────
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# ── Cache ────────────────────────────────────────────────────
+.cache/
+.vite/
+.turbo/
+
+# ── Editor — VS Code ─────────────────────────────────────────
+# These three files ARE committed — project config for everyone:
+#   .vscode/extensions.json
+#   .vscode/settings.json
+#   .vscode/launch.json
+# Everything else is personal/local and ignored:
+.vscode/*.code-snippets
+.vscode/tasks.json
+
+# ── Editor — other ───────────────────────────────────────────
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ── TypeScript ───────────────────────────────────────────────
+*.tsbuildinfo

@@ -1,0 +1,75 @@
+# ============================================================
+#  docker-compose.yml — React Project Dev Stack
+#
+#  IMPORTANT: This file does NOT build an image.
+#  It PULLS the pre-built dev image from Docker Hub.
+#
+#  Image: alihaidar199527/react-devcontainer:latest
+#  Source: github.com/alihaidar0/react-devcontainer
+#
+#  Volume strategy:
+#    .:/workspace:cached          → entire project mounted (git works inside)
+#    ~/.gitconfig                 → your git identity inside container
+#    ~/.ssh                       → your SSH keys (git push from container)
+#    node_modules named volume    → NOT from Windows (performance)
+#    pnpm-store named volume      → shared pnpm cache across rebuilds
+# ============================================================
+
+name: react-app
+
+services:
+
+  app:
+    image: alihaidar199527/react-devcontainer:latest
+    container_name: react_app
+    restart: unless-stopped
+    volumes:
+      # ── Project files ──────────────────────────────────────
+      # Entire project folder mounted — edit on Windows,
+      # changes instantly visible inside the container
+      - .:/workspace:cached
+
+      # ── Git identity ───────────────────────────────────────
+      # Your name + email for commits — read-only
+      - ${USERPROFILE:-~}/.gitconfig:/root/.gitconfig:ro
+
+      # ── SSH keys ───────────────────────────────────────────
+      # Required for git push from inside the container
+      - ${USERPROFILE:-~}/.ssh:/root/.ssh:ro
+
+      # ── pnpm store ─────────────────────────────────────────
+      # Shared cache — packages downloaded once, reused forever
+      - pnpm-store:/root/.local/share/pnpm/store
+
+      # ── node_modules ───────────────────────────────────────
+      # Named volume — lives inside Docker Linux filesystem
+      # NEVER mount node_modules from Windows — catastrophically slow
+      - node-modules:/workspace/node_modules
+
+      # ── Shell history ──────────────────────────────────────
+      # Terminal history persists across container rebuilds
+      - shell-history:/root/.shell_history
+
+    environment:
+      GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=accept-new"
+      NODE_ENV: development
+      # Vite must bind to 0.0.0.0 inside Docker for port forwarding to work
+      VITE_HOST: "0.0.0.0"
+      VITE_PORT: "5173"
+
+    ports:
+      - "5173:5173"   # Vite dev server + HMR
+
+    working_dir: /workspace
+    command: sleep infinity
+    networks:
+      - react-network
+
+volumes:
+  pnpm-store:
+  node-modules:
+  shell-history:
+
+networks:
+  react-network:
+    driver: bridge

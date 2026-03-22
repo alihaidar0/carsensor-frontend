@@ -1,0 +1,125 @@
+{
+  "name": "React App",
+
+  // ── Pulls pre-built image from Docker Hub ─────────────────
+  // No Dockerfile here — image is maintained at:
+  // github.com/alihaidar0/react-devcontainer
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+
+  "remoteEnv": {
+    "GIT_SSH_COMMAND": "ssh -o StrictHostKeyChecking=accept-new",
+    "PNPM_HOME": "/root/.local/share/pnpm"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // ── React / TypeScript ──────────────────────────────
+        "biomejs.biome",
+        "bradlc.vscode-tailwindcss",
+        "csstools.postcss",
+        "ms-vscode.vscode-typescript-next",
+        "yoavbls.pretty-ts-errors",
+
+        // ── Testing ─────────────────────────────────────────
+        "vitest.explorer",
+        "ms-playwright.playwright",
+
+        // ── Git ─────────────────────────────────────────────
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+
+        // ── Docker ──────────────────────────────────────────
+        "ms-azuretools.vscode-docker",
+
+        // ── Utilities ───────────────────────────────────────
+        "mikestead.dotenv",
+        "redhat.vscode-yaml",
+        "PKief.material-icon-theme",
+        "aaron-bond.better-comments",
+        "usernamehw.errorlens",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "wix.vscode-import-cost",
+        "oderwat.indent-rainbow",
+        "streetsidesoftware.code-spell-checker",
+
+        // ── AI ──────────────────────────────────────────────
+        "GitHub.copilot",
+        "GitHub.copilot-chat"
+      ],
+      "settings": {
+        // ── TypeScript ───────────────────────────────────────
+        // Points to project-local TypeScript after pnpm install
+        "typescript.tsdk": "/workspace/node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+
+        // ── Editor ───────────────────────────────────────────
+        "editor.tabSize": 2,
+        "editor.rulers": [80, 120],
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "biomejs.biome",
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": "explicit",
+          "source.fixAll.biome": "explicit"
+        },
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+
+        // ── Tailwind ─────────────────────────────────────────
+        "tailwindCSS.experimental.classRegex": [
+          ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+          ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+        ],
+
+        // ── File associations ─────────────────────────────────
+        "files.associations": {
+          "**/*.css": "tailwindcss",
+          "**/*.env*": "dotenv"
+        },
+
+        // ── Terminal ─────────────────────────────────────────
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.fontSize": 14,
+
+        // ── Formatter per language ────────────────────────────
+        "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
+        "[typescriptreact]": { "editor.defaultFormatter": "biomejs.biome" },
+        "[json]": { "editor.defaultFormatter": "biomejs.biome" },
+        "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
+
+        // ── File nesting (clean explorer sidebar) ────────────
+        "explorer.fileNesting.enabled": true,
+        "explorer.fileNesting.patterns": {
+          "*.ts": "${capture}.js, ${capture}.d.ts, ${capture}.test.ts, ${capture}.spec.ts",
+          "*.tsx": "${capture}.test.tsx, ${capture}.spec.tsx, ${capture}.stories.tsx",
+          "package.json": "package-lock.json, pnpm-lock.yaml, .npmrc, bun.lockb, .nvmrc",
+          "vite.config.*": "vitest.config.*, tsconfig.*.json",
+          "tsconfig.json": "tsconfig.*.json",
+          ".env": ".env.*, .envrc",
+          "biome.json": ".eslintrc*, .prettierrc*, .editorconfig",
+          "tailwind.config.*": "postcss.config.*"
+        },
+
+        // ── Vitest ───────────────────────────────────────────
+        "vitest.enable": true,
+        "vitest.include": ["src/**/*.{test,spec}.{ts,tsx}"]
+      }
+    }
+  },
+
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "postCreateCommand": "bash /workspace/scripts/post_create.sh",
+  "postStartCommand": "bash /workspace/scripts/post_start.sh",
+  "remoteUser": "root"
+}
